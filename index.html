@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StegoVault — Visual Cryptography & Steganography Toolkit</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="Style.css">
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <div class="logo-text">Stego<span>Vault</span></div>
+    </div>
+    <div class="header-tag">v1.0 · Research Prototype</div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">// Visual Cryptography & Steganography Toolkit</div>
+    <h1>Hide secrets<br>inside <span class="grad">plain sight</span></h1>
+    <p>A working prototype implementing LSB steganography, visual cryptography share-splitting, image quality metrics, de-colorization, and Gaussian noise attacks — all in your browser.</p>
+  </div>
+
+  <!-- NAV TABS -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('lsb-encode')">
+      🔏 LSB Encode <span class="tab-num">01</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('lsb-decode')">
+      🔓 LSB Decode <span class="tab-num">02</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('visual-crypto')">
+      🎭 Visual Crypto <span class="tab-num">03</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('metrics')">
+      📊 PSNR / SSIM <span class="tab-num">04</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('decolor')">
+      🎨 De-Colorize <span class="tab-num">05</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('noise')">
+      🌩️ Noise Attack <span class="tab-num">06</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('testcases')">
+      🧪 Test Cases <span class="tab-num">07</span>
+    </button>
+  </div>
+
+  <!-- ============================= -->
+  <!-- PANEL 1: LSB ENCODE          -->
+  <!-- ============================= -->
+  <div id="panel-lsb-encode" class="panel active">
+    <div class="panel-grid">
+      <div>
+        <div class="card">
+          <div class="card-title">Step 1 — Upload cover image</div>
+          <div class="upload-zone" id="enc-upload-zone">
+            <input type="file" id="enc-img-input" accept="image/*" onchange="loadEncodeImage(this)">
+            <div class="upload-icon">🖼️</div>
+            <p>Drop image here or <strong>click to browse</strong><br>PNG, JPG, BMP supported</p>
+          </div>
+          <img id="enc-preview" class="img-preview" alt="Cover image preview">
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="card-title">Step 2 — Secret message</div>
+          <div class="field">
+            <label>TYPE YOUR SECRET TEXT</label>
+            <textarea id="enc-text" rows="4" placeholder="Enter the secret message to hide inside the image..."></textarea>
+          </div>
+          <div class="cap-row">
+            <span>Capacity used</span>
+            <span id="cap-percent">0%</span>
+          </div>
+          <div class="cap-bar"><div class="cap-fill" id="cap-fill" style="width:0%"></div></div>
+          <button class="btn btn-primary" onclick="doEncode()">🔏 Embed Secret Message</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">Output — Stego image</div>
+          <canvas id="enc-canvas" width="300" height="200"></canvas>
+          <div id="enc-status" class="status status-info" style="margin-top:0.75rem; display:none"></div>
+          <div id="enc-metrics" style="display:none; margin-top:0.75rem">
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-value" id="enc-psnr">—</div>
+                <div class="metric-label">PSNR (dB)</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value" id="enc-ssim">—</div>
+                <div class="metric-label">SSIM</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-green" id="enc-download" style="display:none; margin-top:0.75rem" onclick="downloadCanvas('enc-canvas','stego_image.png')">⬇️ Download Stego Image</button>
+        </div>
+
+        <div class="info-box">
+          <strong>How it works:</strong> Each pixel's RGB channels store 2 bits of secret data in their least-significant bits. The change is invisible to the human eye but recoverable mathematically.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- PANEL 2: LSB DECODE          -->
+  <!-- ============================= -->
+  <div id="panel-lsb-decode" class="panel">
+    <div class="panel-grid">
+      <div>
+        <div class="card">
+          <div class="card-title">Upload stego image</div>
+          <div class="upload-zone">
+            <input type="file" id="dec-img-input" accept="image/*" onchange="loadDecodeImage(this)">
+            <div class="upload-icon">🔎</div>
+            <p>Upload the image that <strong>contains hidden text</strong><br>Must have been encoded with this tool</p>
+          </div>
+          <img id="dec-preview" class="img-preview" alt="Stego image preview">
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <button class="btn btn-primary" onclick="doDecode()">🔓 Extract Hidden Message</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">Extracted secret message</div>
+          <div id="dec-status" class="status status-info" style="display:none; margin-bottom:0.75rem"></div>
+          <div class="text-output" id="dec-output">// Awaiting stego image...</div>
+        </div>
+        <div class="info-box">
+          <strong>Decoding process:</strong> Reads the 2 LSBs from every pixel's R, G, B channels in order. Reconstructs each 8-bit character until the null terminator (00000000) is found.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- PANEL 3: VISUAL CRYPTO       -->
+  <!-- ============================= -->
+  <div id="panel-visual-crypto" class="panel">
+    <div class="panel-grid">
+      <div>
+        <div class="card">
+          <div class="card-title">Upload secret image</div>
+          <div class="upload-zone">
+            <input type="file" id="vc-img-input" accept="image/*" onchange="loadVCImage(this)">
+            <div class="upload-icon">🎭</div>
+            <p>Upload any image to split into <strong>2 cryptographic shares</strong><br>Neither share alone reveals the secret</p>
+          </div>
+          <img id="vc-preview" class="img-preview" alt="Secret image">
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <button class="btn btn-primary" onclick="doVisualCrypto()">🎭 Generate Shares</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">Cryptographic shares</div>
+          <div id="vc-status" class="status status-info" style="display:none; margin-bottom:0.75rem"></div>
+          <div class="share-grid">
+            <div class="share-item">
+              <div class="share-label">Share A</div>
+              <canvas id="vc-share1" width="160" height="120"></canvas>
+              <button class="btn btn-secondary" style="margin-top:6px;padding:6px;font-size:11px" onclick="downloadCanvas('vc-share1','share_A.png')">⬇️ Download</button>
+            </div>
+            <div class="share-item">
+              <div class="share-label">Share B</div>
+              <canvas id="vc-share2" width="160" height="120"></canvas>
+              <button class="btn btn-secondary" style="margin-top:6px;padding:6px;font-size:11px" onclick="downloadCanvas('vc-share2','share_B.png')">⬇️ Download</button>
+            </div>
+            <div class="share-item">
+              <div class="share-label">Overlaid (secret)</div>
+              <canvas id="vc-overlay" width="160" height="120"></canvas>
+              <button class="btn btn-secondary" style="margin-top:6px;padding:6px;font-size:11px" onclick="downloadCanvas('vc-overlay','revealed.png')">⬇️ Download</button>
+            </div>
+          </div>
+        </div>
+        <div class="info-box">
+          <strong>Visual Cryptography:</strong> Each pixel is split into a random pair of subpixel patterns. Individually they look like random noise. When overlaid with XOR, the original image is revealed.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- PANEL 4: METRICS             -->
+  <!-- ============================= -->
+  <div id="panel-metrics" class="panel">
+    <div class="panel-grid">
+      <div>
+        <div class="card">
+          <div class="card-title">Original image</div>
+          <div class="upload-zone">
+            <input type="file" id="m-orig-input" accept="image/*" onchange="loadMetricImage(this,'orig')">
+            <div class="upload-icon">📷</div>
+            <p>Upload the <strong>original/cover</strong> image</p>
+          </div>
+          <img id="m-orig-preview" class="img-preview" alt="Original">
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="card-title">Stego / modified image</div>
+          <div class="upload-zone">
+            <input type="file" id="m-stego-input" accept="image/*" onchange="loadMetricImage(this,'stego')">
+            <div class="upload-icon">🔏</div>
+            <p>Upload the <strong>stego/attacked</strong> image</p>
+          </div>
+          <img id="m-stego-preview" class="img-preview" alt="Stego">
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <button class="btn btn-primary" onclick="doMetrics()">📊 Calculate PSNR & SSIM</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">Quality metrics</div>
+          <div id="metrics-status" class="status status-info" style="display:none; margin-bottom:0.75rem"></div>
+
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-value" id="m-psnr">—</div>
+              <div class="metric-label">PSNR (dB)</div>
+              <div class="metric-bar"><div class="metric-fill" id="m-psnr-bar" style="width:0%;background:var(--accent)"></div></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value" id="m-ssim">—</div>
+              <div class="metric-label">SSIM</div>
+              <div class="metric-bar"><div class="metric-fill" id="m-ssim-bar" style="width:0%;background:var(--green)"></div></div>
+            </div>
+          </div>
+
+          <div id="metrics-verdict" style="display:none">
+            <div class="metric-card" style="margin-top:10px; text-align:left">
+              <div style="font-size:13px; font-weight:600; margin-bottom:8px; color:var(--text)">Quality Verdict</div>
+              <div id="verdict-text" style="font-family:var(--mono); font-size:12px; color:var(--text2); line-height:1.8"></div>
+            </div>
+            <div class="metric-card" style="margin-top:10px; text-align:left">
+              <div style="font-size:13px; font-weight:600; margin-bottom:8px; color:var(--text)">Pixel Stats</div>
+              <div id="pixel-stats" style="font-family:var(--mono); font-size:12px; color:var(--text2); line-height:1.8"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <strong>PSNR thresholds:</strong><br>
+          &gt; 40 dB → Excellent (imperceptible)<br>
+          30–40 dB → Good (typical stego)<br>
+          20–30 dB → Acceptable<br>
+          &lt; 20 dB → Poor quality<br><br>
+          <strong>SSIM:</strong> 1.0 = identical, &gt;0.95 = excellent
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- PANEL 5: DE-COLORIZE         -->
+  <!-- ============================= -->
+  <div id="panel-decolor" class="panel">
+    <div class="panel-grid">
+      <div>
+        <div class="card">
+          <div class="card-title">Upload color image</div>
+          <div class="upload-zone">
+            <input type="file" id="dc-img-input" accept="image/*" onchange="loadDCImage(this)">
+            <div class="upload-icon">🎨</div>
+            <p>Upload a <strong>color image</strong> to convert<br>to grayscale using luminance formula</p>
+          </div>
+          <img id="dc-preview" class="img-preview" alt="Color image">
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="card-title">De-colorization method</div>
+          <div class="field">
+            <label>SELECT METHOD</label>
+            <select id="dc-method" style="width:100%; background:var(--bg3); border:1px solid var(--border2); border-radius:8px; color:var(--text); font-family:var(--mono); font-size:13px; padding:10px 12px; outline:none;">
+              <option value="luminance">Luminance (0.299R + 0.587G + 0.114B)</option>
+              <option value="average">Average ((R + G + B) / 3)</option>
+              <option value="max">Max channel</option>
+              <option value="r">Red channel only</option>
+              <option value="g">Green channel only</option>
+              <option value="b">Blue channel only</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="doDecolor()">🎨 Convert to Grayscale</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">Grayscale output</div>
+          <canvas id="dc-canvas" width="300" height="200"></canvas>
+          <div id="dc-status" class="status status-info" style="display:none; margin-top:0.75rem"></div>
+          <button class="btn btn-green" id="dc-download" style="display:none; margin-top:0.75rem" onclick="downloadCanvas('dc-canvas','grayscale.png')">⬇️ Download Grayscale</button>
+        </div>
+
+        <div class="info-box">
+          <strong>Paper connection:</strong> This implements the de-colorization stage from the paper. The stego image is converted to grayscale before transmission, hiding the steganographic modification from attackers who can't compare against a fixed reference.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- PANEL 6: NOISE ATTACK        -->
+  <!-- ============================= -->
+  <div id="panel-noise" class="panel">
+    <div class="panel-grid">
+      <div>
+        <div class="card">
+          <div class="card-title">Upload image to attack</div>
+          <div class="upload-zone">
+            <input type="file" id="na-img-input" accept="image/*" onchange="loadNAImage(this)">
+            <div class="upload-icon">🌩️</div>
+            <p>Upload any image to simulate <strong>channel attacks</strong></p>
+          </div>
+          <img id="na-preview" class="img-preview" alt="Input">
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="card-title">Attack parameters</div>
+
+          <div class="field">
+            <label>ATTACK TYPE</label>
+            <select id="na-type" style="width:100%; background:var(--bg3); border:1px solid var(--border2); border-radius:8px; color:var(--text); font-family:var(--mono); font-size:13px; padding:10px 12px; outline:none;">
+              <option value="gaussian">Gaussian Noise (μ=0)</option>
+              <option value="salt">Salt & Pepper Noise</option>
+              <option value="blur">Mean Filter (Blur)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>NOISE INTENSITY / VARIANCE</label>
+            <div class="slider-row">
+              <input type="range" id="na-variance" min="1" max="100" value="25" oninput="document.getElementById('na-var-val').textContent=this.value">
+              <span class="slider-val" id="na-var-val">25</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="doNoiseAttack()">🌩️ Apply Attack</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">Attacked image output</div>
+          <canvas id="na-canvas" width="300" height="200"></canvas>
+          <div id="na-status" class="status status-info" style="display:none; margin-top:0.75rem"></div>
+          <div id="na-metrics" style="display:none; margin-top:0.75rem">
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-value" id="na-psnr">—</div>
+                <div class="metric-label">PSNR (dB)</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-value" id="na-ssim">—</div>
+                <div class="metric-label">SSIM</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-green" id="na-download" style="display:none; margin-top:0.75rem" onclick="downloadCanvas('na-canvas','attacked.png')">⬇️ Download Attacked Image</button>
+        </div>
+
+        <div class="info-box">
+          <strong>Paper connection:</strong> The paper trains its model against Gaussian noise (σ²=0.1) to ensure the colorization network can reconstruct the stego image even after channel degradation. This simulates exactly that attack.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- PANEL 7: TEST CASES          -->
+  <!-- ============================= -->
+  <div id="panel-testcases" class="panel">
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-title">Documented test cases</div>
+      <p style="font-family:var(--mono); font-size:12px; color:var(--text2); line-height:1.8;">
+        All functional test cases for the Visual Cryptography & Steganography Toolkit prototype.<br>
+        Based on evaluation methodology from: <em>Li et al., "Robust Image Steganography via Color Conversion," IEEE TCSVT 2025.</em>
+      </p>
+    </div>
+
+    <div class="section-divider"><span>Feature 01 — LSB Steganography</span></div>
+    <div class="test-cases-grid">
+      <div class="test-case">
+        <div class="test-case-id">TC-001</div>
+        <div class="test-case-title">Encode & exact decode</div>
+        <div class="test-case-desc">Embed "Hello World" into any PNG. Decode must return exact string with 0 errors.</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-002</div>
+        <div class="test-case-title">Visual imperceptibility</div>
+        <div class="test-case-desc">PSNR of stego vs cover must exceed 30 dB. Expected: ~39 dB for short messages.</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-003</div>
+        <div class="test-case-title">Capacity limit warning</div>
+        <div class="test-case-desc">Message exceeding pixel capacity should trigger a visual warning, not silent truncation.</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-004</div>
+        <div class="test-case-title">Empty message handling</div>
+        <div class="test-case-desc">Embedding an empty string should produce a stego image with only the null terminator.</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-005</div>
+        <div class="test-case-title">Special characters</div>
+        <div class="test-case-desc">Unicode, emoji, and newline characters must encode/decode correctly via UTF-8.</div>
+        <div class="test-status ts-manual">⧖ Manual verify</div>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>Feature 02 — Visual Cryptography</span></div>
+    <div class="test-cases-grid">
+      <div class="test-case">
+        <div class="test-case-id">TC-006</div>
+        <div class="test-case-title">Shares appear random</div>
+        <div class="test-case-desc">Both Share A and Share B must be visually indistinguishable from random noise independently.</div>
+        <div class="test-status ts-manual">⧖ Manual verify</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-007</div>
+        <div class="test-case-title">XOR overlay reveals secret</div>
+        <div class="test-case-desc">Overlaying Share A XOR Share B must produce a recognizable reconstruction of the original.</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-008</div>
+        <div class="test-case-title">Deterministic shares</div>
+        <div class="test-case-desc">Different inputs must produce different shares. Same input always → same Share A (deterministic).</div>
+        <div class="test-status ts-manual">⧖ Manual verify</div>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>Feature 03 — PSNR / SSIM Metrics</span></div>
+    <div class="test-cases-grid">
+      <div class="test-case">
+        <div class="test-case-id">TC-009</div>
+        <div class="test-case-title">Identical images → ∞ PSNR</div>
+        <div class="test-case-desc">Uploading the same image twice must show PSNR = ∞ (MSE = 0) and SSIM = 1.000.</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-010</div>
+        <div class="test-case-title">Noisy image → lower PSNR</div>
+        <div class="test-case-desc">After Gaussian noise attack, PSNR should drop inversely with noise variance (σ²=25 → ~20–25 dB).</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-011</div>
+        <div class="test-case-title">Stego scores &gt; 30 dB</div>
+        <div class="test-case-desc">LSB-encoded stego image must score above 30 dB PSNR vs original (matches Table I in paper).</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+    </div>
+
+    <div class="section-divider"><span>Features 04–05 — De-colorize & Noise Attack</span></div>
+    <div class="test-cases-grid">
+      <div class="test-case">
+        <div class="test-case-id">TC-012</div>
+        <div class="test-case-title">Grayscale pixel range</div>
+        <div class="test-case-desc">All pixels in de-colorized output must have R=G=B (valid grayscale), values in [0, 255].</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-013</div>
+        <div class="test-case-title">Luminance formula accuracy</div>
+        <div class="test-case-desc">Pixel (255,0,0) → luminance = 76.245 ≈ 76. Pixel (0,255,0) → 149.7 ≈ 150.</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+      <div class="test-case">
+        <div class="test-case-id">TC-014</div>
+        <div class="test-case-title">Gaussian noise distribution</div>
+        <div class="test-case-desc">Mean of pixel differences between original and noisy must be ≈ 0 (symmetric noise).</div>
+        <div class="test-status ts-pass">✓ Auto-verifiable</div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem; background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:1.5rem">
+      <div class="card-title">Run automated checks</div>
+      <p style="font-family:var(--mono); font-size:12px; color:var(--text2); margin-bottom:1rem; line-height:1.8">Click below to run all auto-verifiable test logic in-browser and see pass/fail results.</p>
+      <button class="btn btn-primary" onclick="runAllTests()" style="width:auto; padding:11px 28px">🧪 Run All Auto Tests</button>
+      <div id="test-results" style="margin-top:1rem; font-family:var(--mono); font-size:12px; line-height:2; display:none"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>StegoVault · Visual Cryptography & Steganography Toolkit<br>
+    Based on: Li et al., IEEE TCSVT Vol. 35 No. 2, Feb 2025 · All processing is client-side only</p>
+    <p style="text-align:right">Features: LSB Encode · LSB Decode · Visual Crypto<br>PSNR/SSIM · De-colorize · Noise Attack · Test Cases</p>
+  </footer>
+
+</div><!-- end wrapper -->
+
+<script src="script.js"></script>
+</body>
+</html>
